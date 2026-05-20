@@ -1,5 +1,9 @@
-anthropic
 groq
 pypdf
 rich
 python-dotenv
+streamlit
+sentence-transformers
+faiss-cpu
+reportlab
+python-docx
