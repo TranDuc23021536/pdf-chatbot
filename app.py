@@ -145,57 +145,53 @@ Nếu thông tin không có trong tài liệu, nói rõ điều đó.
 class ReportGenerator:
     """Tạo báo cáo PDF từ lịch sử hội thoại"""
 
-    @staticmethod
+   @staticmethod
     def generate_pdf(chat_history: list, doc_names: list) -> bytes:
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4,
                                 rightMargin=2*cm, leftMargin=2*cm,
                                 topMargin=2*cm, bottomMargin=2*cm)
-
         styles = getSampleStyleSheet()
-        title_style = ParagraphStyle('Title', parent=styles['Title'],
-                                     fontSize=16, spaceAfter=12)
-        heading_style = ParagraphStyle('Heading', parent=styles['Heading2'],
-                                       fontSize=12, spaceAfter=6, spaceBefore=12)
-        body_style = ParagraphStyle('Body', parent=styles['Normal'],
-                                    fontSize=10, spaceAfter=6, leading=14)
-        meta_style = ParagraphStyle('Meta', parent=styles['Normal'],
-                                    fontSize=9, textColor='grey', spaceAfter=4)
-
+        title_style = ParagraphStyle('CustomTitle', fontSize=16,
+                                     spaceAfter=12, fontName='Helvetica-Bold')
+        heading_style = ParagraphStyle('CustomHeading', fontSize=12,
+                                       spaceAfter=6, spaceBefore=12,
+                                       fontName='Helvetica-Bold')
+        body_style = ParagraphStyle('CustomBody', fontSize=10,
+                                    spaceAfter=6, leading=14,
+                                    fontName='Helvetica')
+        meta_style = ParagraphStyle('CustomMeta', fontSize=9,
+                                    textColor='grey', spaceAfter=4,
+                                    fontName='Helvetica')
         story = []
-
-        # Tiêu đề
-        story.append(Paragraph("Báo Cáo Hỏi Đáp Tài Liệu", title_style))
+        story.append(Paragraph("PDF Chatbot - Bao Cao Hoi Dap", title_style))
         story.append(Paragraph(
-            f"Tạo lúc: {datetime.now().strftime('%d/%m/%Y %H:%M')} | "
-            f"Tài liệu: {', '.join(doc_names) if doc_names else 'Không có'}",
+            f"Tao luc: {datetime.now().strftime('%d/%m/%Y %H:%M')} | "
+            f"Tai lieu: {', '.join(doc_names) if doc_names else 'Khong co'}",
             meta_style
         ))
         story.append(Spacer(1, 0.5*cm))
-
-        # Nội dung Q&A
+        history = [m for m in chat_history if m["role"] in ("user", "assistant")]
         qa_pairs = []
         i = 0
-        history = [m for m in chat_history if m["role"] in ("user", "assistant")]
         while i < len(history) - 1:
             if history[i]["role"] == "user" and history[i+1]["role"] == "assistant":
                 qa_pairs.append((history[i]["content"], history[i+1]["content"]))
                 i += 2
             else:
                 i += 1
-
         for idx, (q, a) in enumerate(qa_pairs, 1):
-            story.append(Paragraph(f"Câu {idx}: {q}", heading_style))
-            # Tách từng dòng để tránh lỗi ký tự đặc biệt
-            safe_answer = a.replace('<', '&lt;').replace('>', '&gt;').replace('&', '&amp;')
-            for line in safe_answer.split('\n'):
+            safe_q = q.encode('ascii', 'ignore').decode('ascii')
+            safe_a = a.encode('ascii', 'ignore').decode('ascii')
+            safe_q = safe_q.replace('<','&lt;').replace('>','&gt;').replace('&','&amp;')
+            safe_a = safe_a.replace('<','&lt;').replace('>','&gt;').replace('&','&amp;')
+            story.append(Paragraph(f"Cau {idx}: {safe_q}", heading_style))
+            for line in safe_a.split('\n'):
                 if line.strip():
                     story.append(Paragraph(line.strip(), body_style))
             story.append(Spacer(1, 0.3*cm))
-
         doc.build(story)
         return buffer.getvalue()
-
 
 # ==================== STREAMLIT UI ====================
 
