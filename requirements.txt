@@ -1,0 +1,5 @@
+anthropic
+groq
+pypdf
+rich
+python-dotenv
